@@ -46,7 +46,8 @@ class ScenarioAgent:
 
             # 初始化 ChatOllama 模型，配置模型参数
             self.chatbot = system_prompt | ChatOllama(
-                model="llama3.1:8b-instruct-q8_0",  # 使用的模型名称
+                # model="llama3.1:8b-instruct-q8_0",  # 使用的模型名称
+                model="llama3.1:8b-instruct-q4_0",  # 使用的模型名称
                 max_tokens=8192,  # 最大生成的token数
                 temperature=0.8,  # 生成文本的随机性
             )
@@ -62,7 +63,7 @@ class ScenarioAgent:
             session_id (str): 会话的唯一标识符
         """
         if session_id is None:
-            session_id = self.name
+          session_id = self.name
 
         history = get_session_history(session_id)
         LOG.debug(f"[history]:{history}")
