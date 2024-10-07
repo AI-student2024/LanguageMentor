@@ -9,15 +9,21 @@ from langchain_core.runnables.history import RunnableWithMessageHistory  # 导�
 from .session_history import get_session_history  # 导入会话历史相关方法
 from utils.logger import LOG  # 导入日志工具
 
+from .model import ModelManager  # 导入 ModelManager
+
 class ConversationAgent:
     """
     对话代理类，负责处理与用户的对话。
     """
-    def __init__(self, session_id=None):
+    def __init__(self, session_id=None, model_name=None):
         self.name = "conversation"  # 设置代理名称为 "conversation"
         self.session_id = session_id if session_id else self.name  # 如果未提供会话ID，则使用代理名称作为会话ID
         self.prompt_file = "prompts/conversation_prompt.txt"  # 系统提示语文件路径
         self.prompt = self.load_prompt()  # 加载系统提示语
+
+        # 使用 ModelManager 获取模型
+        model_manager = ModelManager(model_name=model_name)
+        self.model = model_manager.create_model()
 
         self.create_chatbot()  # 创建聊天机器人
 
@@ -30,6 +36,10 @@ class ConversationAgent:
                 return file.read().strip()  # 读取文件并去除首尾空格
         except FileNotFoundError:
             raise FileNotFoundError(f"找不到提示文件 {self.prompt_file}!")
+        
+    def set_model(self, model):
+        self.model = model
+        self.create_chatbot()  # 重新初始化聊天机器人
 
     def create_chatbot(self):
         """
@@ -41,17 +51,11 @@ class ConversationAgent:
             MessagesPlaceholder(variable_name="messages"),  # 消息占位符
         ])
 
-        # 初始化 ChatOllama 模型，配置参数
-        self.chatbot = system_prompt | ChatOllama(
-            # model="llama3.1:8b-instruct-q8_0",  # 使用的模型名称
-            model="llama3.1:8b-instruct-q4_0",  # 使用的模型名称
-            max_tokens=8192,  # 最大生成的 token 数
-            temperature=0.8,  # 随机性配置
-        )
+        # 使用 ModelManager 创建的模型
+        self.chatbot = system_prompt | self.model
 
         # 将聊天机器人与消息历史记录关联
         self.chatbot_with_history = RunnableWithMessageHistory(self.chatbot, get_session_history)
-
 
     def start_new_session(self):
         """

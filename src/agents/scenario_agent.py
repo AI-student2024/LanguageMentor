@@ -9,17 +9,22 @@ from langchain_core.runnables.history import RunnableWithMessageHistory  # 导�
 from .session_history import get_session_history  # 导入会话历史相关方法
 from utils.logger import LOG
 
+from .model import ModelManager  # 导入 ModelManager
+
 class ScenarioAgent:
-    def __init__(self, scenario_name):
+    def __init__(self, scenario_name, model_name=None):
         self.name = scenario_name
         self.prompt_file = f"prompts/{self.name}_prompt.txt"
         self.intro_file = f"content/intro/{self.name}.json"
         self.prompt = self.load_prompt()
         self.intro_messages = self.load_intro()
 
+        # 使用 ModelManager 获取模型
+        model_manager = ModelManager(model_name=model_name)
+        self.model = model_manager.create_model()
+
         self.create_chatbot()
 
-    
     def load_prompt(self):
         try:
             with open(self.prompt_file, "r", encoding="utf-8") as file:
@@ -35,35 +40,29 @@ class ScenarioAgent:
             raise FileNotFoundError(f"Intro file {self.intro_file} not found!")
         except json.JSONDecodeError:
             raise ValueError(f"Intro file {self.intro_file} contains invalid JSON!")
+        
 
+    def set_model(self, model):
+        self.model = model
+        self.create_chatbot()  # 重新初始化聊天机器人
+        
 
     def create_chatbot(self):
-            # 创建聊天提示模板，包括系统提示和消息占位符
-            system_prompt = ChatPromptTemplate.from_messages([
-                ("system", self.prompt),  # 系统提示部分
-                MessagesPlaceholder(variable_name="messages"),  # 消息占位符
-            ])
+        # 创建聊天提示模板，包括系统提示和消息占位符
+        system_prompt = ChatPromptTemplate.from_messages([
+            ("system", self.prompt),  # 系统提示部分
+            MessagesPlaceholder(variable_name="messages"),  # 消息占位符
+        ])
 
-            # 初始化 ChatOllama 模型，配置模型参数
-            self.chatbot = system_prompt | ChatOllama(
-                # model="llama3.1:8b-instruct-q8_0",  # 使用的模型名称
-                model="llama3.1:8b-instruct-q4_0",  # 使用的模型名称
-                max_tokens=8192,  # 最大生成的token数
-                temperature=0.8,  # 生成文本的随机性
-            )
+        # 使用 ModelManager 创建的模型
+        self.chatbot = system_prompt | self.model
 
-            # 将聊天机器人与消息历史记录关联起来
-            self.chatbot_with_history = RunnableWithMessageHistory(self.chatbot, get_session_history)
+        # 将聊天机器人与消息历史记录关联起来
+        self.chatbot_with_history = RunnableWithMessageHistory(self.chatbot, get_session_history)
 
     def start_new_session(self, session_id: str = None):
-        """
-        开始一个新的聊天会话，并发送初始AI消息。
-        
-        参数:
-            session_id (str): 会话的唯一标识符
-        """
         if session_id is None:
-          session_id = self.name
+            session_id = self.name
 
         history = get_session_history(session_id)
         LOG.debug(f"[history]:{history}")
@@ -75,19 +74,7 @@ class ScenarioAgent:
         else:
             return history.messages[-1].content  # 返回历史记录中的最后一条消息
 
-
     def chat_with_history(self, user_input, session_id: str = None):
-        """
-        处理用户输入并生成包含聊天历史的回复，同时记录日志。
-        
-        参数:
-            user_input (str): 用户输入的消息
-            session_id (str): 会话的唯一标识符
-        
-        返回:
-            str: 代理生成的回复内容
-        """
-        # TODO: InMemoryStore -> DB
         if session_id is None:
             session_id = self.name
 
