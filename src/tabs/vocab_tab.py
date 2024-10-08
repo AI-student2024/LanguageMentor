@@ -1,4 +1,4 @@
-# tabs/vocab_tab.py
+# src/tabs/vocab_tab.py
 
 import gradio as gr
 from agents.vocab_agent import VocabAgent

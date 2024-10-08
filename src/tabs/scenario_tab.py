@@ -1,4 +1,4 @@
-# tabs/scenario_tab.py
+# src/tabs/scenario_tab.py
 
 import gradio as gr
 from agents.scenario_agent import ScenarioAgent

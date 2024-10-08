@@ -1,0 +1,6 @@
+2024-10-08 14:02:59 | DEBUG | agent_base:chat_with_history:89 - [ChatBot][TestAgent] Test response
+2024-10-08 14:03:01 | DEBUG | agent_base:chat_with_history:89 - [ChatBot][conversation] Test response
+2024-10-08 14:03:02 | DEBUG | agent_base:chat_with_history:89 - [ChatBot][test_scenario] Test response
+2024-10-08 14:03:04 | DEBUG | scenario_agent:start_new_session:40 - [history][test_session]:
+2024-10-08 14:03:05 | DEBUG | agent_base:chat_with_history:89 - [ChatBot][vocab_study] Test response
+2024-10-08 14:03:06 | DEBUG | vocab_agent:restart_session:41 - [history][test_session]:
